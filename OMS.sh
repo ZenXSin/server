@@ -4,7 +4,7 @@
 version="1.0.1"
 
 echo "正在下载最新版本..."
-wget -q https://raw.githubusercontent.com/ZenXSin/server/main/OMS.sh -O OMS.sh
+wget --progress=bar:force https://raw.githubusercontent.com/ZenXSin/server/main/OMS.sh -O OMS.sh
 echo "下载完成，当前版本$version"
 
 echo "你好，请确认你目前已经使用screen创建了一个新的会话，并且当前目录是你要开服的服务器目录。"
