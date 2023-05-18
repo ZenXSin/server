@@ -2,43 +2,110 @@
 
 # 内置版本号
 version="1.0.2"
-
 echo -e "当前版本$version，\033[31m\n官网:https://github.com/ZenXSin/server\nqq群:950399874\nby zxs\033[0m"
 
-echo "你好，请确认你目前已经使用screen创建了一个新的会话，并且当前目录是你要开服的服务器目录。"
-select option in "是的，继续安装" "我没有screen，选我安装" "我不是在我的服务器目录，点我退出" "其他原因，退出"
-do
-case $option in
-"是的，继续安装")
-break
-;;
-"我没有screen，选我安装")
-sudo apt-get install -y screen || { echo -e "\033[31m请检查是否安装apt-get，然后重新运行本程序。\033[0m"; exit 1; }
-break
-;;
-"我不是在我的服务器目录，点我退出")
-exit 1
-break
-;;
-"检查更新")
-echo "正在下载最新版本..."
-wget --progress=bar:force https://download.fastgit.org/ZenXSin/server/releases/download/mindustry/OMS.sh -O OMS.sh
-echo -e "下载完成，当前版本$version。\033[31m\n官网:https://github.com/ZenXSin/server\nqq群:950399874\nby zxs\033[0m"
-exit 1
-;;
-*)
-echo "无效选项"
-;;
-esac
-done
-read -p "是否安装Java8或以上版本？(y/n) " java_option
-if [ "$java_option" = "y" ]; then
-echo "开始安装Java8"
-sudo apt-get install -y openjdk-8-jdk || { echo -e "\033[31m安装Java失败\033[0m"; exit 1; }
+echo "开始配置，如果你看不懂，一路回车即可"
+echo "ctrl+c终止"
+
+if type apt >/dev/null 2>&1; then
+  echo "检测到apt包管理(ubuntu/debian)"
+  pkg="apt"
+else
+  if type yum >/dev/null 2>&1; then
+    echo "检测到yum包管理(centos)"
+    pkg="yum"
+  else
+    if type snap >/dev/null 2>&1; then
+      echo "检测到snap包管理"
+      pkg="snap"
+    else
+      echo "未检测到包管理，终止"
+      exit 0
+    fi
+  fi
 fi
-echo "正在下载server.zip"
-wget --progress=bar:force https://download.fastgit.org/ZenXSin/server/releases/download/mindustry/server.sh || { echo -e "\033[31m下载失败\033[0m"; exit 1; }
-echo "正在解压server.zip"
-unzip -q server.zip || { echo -e "\033[31m解压失败\033[0m"; exit 1; }
-echo "配置成功，执行指令:java -jar host.jar 开启服务器。"
+
+if type java >/dev/null 2>&1; then
+  echo "Found java"
+else
+  read -p "未发现java，需要安装吗？(默认jre 11)[y/n]" i_java
+  read -p "输入需要的jre版本(建议11或17)" j_version
+  if [ "$i_java" = "y" ] && [ -z "$i_java" ]; then
+    "$pkg" install -y openjdk-"$j_version"-jre || { echo "安装jre时出错，请检查输出";exit 1; }
+  else
+    echo "停止"
+    exit 0
+  fi
+fi
+
+if type screen >/dev/null 2>&1; then
+  echo "Found screen"
+else
+  read -p "未发现screen，需要安装吗？[y/n]" i_screen
+  if [ "$i_screen" = "y" ] || [ -z "$i_screen" ]; then
+    "$pkg" install -y screen || { echo "安装screen时出错，请检查输出";exit 1; }
+  else
+    echo "停止"
+    exit 0
+  fi
+fi
+
+if type wget >/dev/null 2>&1; then
+  echo "Found wget"
+else
+  read -p "未发现wget，需要安装吗？[y/n]" i_wget
+  if [ "$i_wget" = "y" ] && [ -z "$i_wget" ]; then
+    "$pkg" install -y wget || { echo "安装wget时出错，请检查输出";exit 1; }
+  else
+    echo "停止"
+    exit 0
+  fi
+fi
+
+if [ ! -d "$HOME/mdt" ];then
+  echo "未检测到文件夹mdt，创建并配置"
+  mkdir "$HOME/mdt"
+  cd "$HOME/mdt"
+  if [ -f "$HOME/mdt/temp.jar" ];then
+    rm "$HOME/mdt/temp.jar"
+  else
+    echo "continue"
+  fi
+    echo "开始下载server-release.jar"
+    wget "https://github.com/Anuken/Mindustry/releases/latest/download/server-release.jar" -O "$HOME/mdt/temp.jar" || { echo "下载时出错，请检查输出";exit 1; }
+    echo "结束"
+    exit 0
+
+else
+  if [ -f "$HOME/mdt/server-release.jar" ];then
+    ps -ef | grep "java -jar server-release.jar" | grep -v grep
+    if [ "$?" = "0" ]; then
+      echo "似乎一切已就绪，并检测到了一个正在运行的服务器进程，请通过screen -r mdt命令连接窗口"
+      echo "结束"
+      exit 0
+    else
+      read -p "似乎一切已就绪，但是未检测到正在运行的服务器进程，你想启动它吗？[y/n]" run_yes
+      if [ "$run_yes"="y" ] || [ -z "$run_res" ];then
+        screen_name="mdt"
+        screen -dmS "$screen_name"
+        screen -x -S "$screen_name" -p 0 -X stuff "echo -e \"\e[43;35mctrl+a+d可断开连接\e[0m\" && cd $HOME/mdt && java -jar server-release.jar\n"
+        screen -r mdt
+      else
+        echo "结束"
+        exit 0
+      fi
+    fi
+  else
+    echo "server-release.jar缺失，重新下载"
+    if [ -f "$HOME/mdt/temp.jar" ];then
+      rm "$HOME/mdt/temp.jar"
+    else
+      wget "https://github.com/Anuken/Mindustry/releases/latest/download/server-release.jar" -O "$HOME/mdt/temp.jar" || { echo "下载时出错，请检查输出";exit 1; }
+      mv "$HOME/mdt/temp.jar" "$HOME/mdt/server-release.jar"
+      echo "结束"
+      exit 0
+    fi
+  fi
+fi
 exit 0
+
