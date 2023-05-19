@@ -81,7 +81,7 @@ if [ ! -d "$HOME/$dir_name" ];then
     echo "开始下载server-release.jar"
     wget "https://github.com/Anuken/Mindustry/releases/latest/download/server-release.jar" -O "$HOME/$dir_name/temp.jar" || { echo "下载时出错，请检查输出";exit 1; }
     mv "$HOME/$dir_name/temp.jar" "$HOME/$dir_name/server-release.jar"
-
+    echo "请再次运行此脚本"
 else
   if [ -f "$HOME/$dir_name/server-release.jar" ];then
    if [ -d "$HOME/$dir_name/config/scripts/mark" ];then
@@ -113,6 +113,17 @@ else
           fi
         fi
       fi
+      if type unzip >/dev/null 2>&1; then
+        echo "Found unzip"
+      else
+        read -p "未发现unzip，需要安装吗？[enter/n]:" i_unzip
+        if [ -z "$i_unzip" ]; then
+          "$ins" "$pkg" install -y unzip || { echo "安装unzip时出错，请检查输出";exit 1; }
+        else
+          echo "停止"
+          exit 0
+        fi
+      fi
       if [ ! -d "$HOME/$dir_name/config/scripts" ];then
         mkdir "$HOME/$dir_name/config/scripts"
         if type unzip >/dev/null 2>&1; then
@@ -139,7 +150,10 @@ else
           rm "$HOME/$dir_name/config/scripts/temp-$wzs_v.zip"
           mkdir "$HOME/$dir_name/config/scripts/mark"
         else
-          echo "continue"
+          wget "https://github.com/way-zer/ScriptAgent4MindustryExt/releases/download/v$wzs_v/ScriptAgent4Mindustry-$wzs_v-scripts.zip" -O "$HOME/$dir_name/config/scripts/temp-$wzs_v.zip"  || { echo "下载时出错，请检查输出";exit 1; }
+          unzip "$HOME/$dir_name/config/scripts/temp-$wzs_v.zip" -d "$HOME/$dir_name/config/scripts"
+          rm "$HOME/$dir_name/config/scripts/temp-$wzs_v.zip"
+          mkdir "$HOME/$dir_name/config/scripts/mark"
         fi
       fi
     fi
